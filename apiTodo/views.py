@@ -8,7 +8,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Todo
 from .serializers import TodoSerializer
-
+from rest_framework.views import APIView
+from django.shortcuts import render, get_object_or_404
 from rest_framework import status
 
 # Create your views here.
@@ -17,7 +18,7 @@ def home(request):
         '<center><h1 style="background-color:powderblue;">Welcome to ApiTodo</h1></center>'
     )
 
-
+'''
 @api_view()
 def hello_world(request):
     return Response({"message": "Hello, world!"})
@@ -92,4 +93,47 @@ def todoDelete(request, pk):
     querset.delete()
     return Response("Item Deleted")
     
+'''  
+#! Class Based Views
+
+class TodoList(APIView):
     
+    def get(self, request):
+        todos = Todo.objects.all()
+        serializer = TodoSerializer(todos, many=True)
+        return Response(serializer.data)
+    
+    def post(self, request):
+        serializer = TodoSerializer(data = request.data)
+        if serializer.is_valid():
+            serializer.save()
+        return Response(serializer.data)
+    
+
+class TodoDetail(APIView):
+    
+    def get_obj(self, id):
+        todo = get_object_or_404(Todo, id=id)
+    
+    def get(self, request, id):
+        todo = self.get_obj(id)
+        serializer = TodoSerializer(todo)
+        return Response(serializer.data)
+    
+    
+    def put(self, request, id):
+        todo =  self.get_obj(id)
+        serializer = TodoSerializer(instance=todo, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    def delete(self, request, id):
+        todo =  self.get_obj(id)
+        todo.delete()
+        data = {
+            "message" : "Todo successfully deleted"
+        }
+        return Response(data, status=status.HTTP_204_NO_CONTENT)  
